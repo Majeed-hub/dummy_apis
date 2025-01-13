@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 import sqlite3
 
-
 app = Flask(__name__)
+
 
 def init_db():
     """Initialize the SQLite database."""
@@ -18,6 +18,7 @@ def init_db():
             )
         ''')
         conn.commit()
+
 
 @app.route('/drivers', methods=['POST'])
 def add_driver():
@@ -42,6 +43,7 @@ def add_driver():
 
     return jsonify({'id': driver_id, 'message': 'Driver added successfully'}), 201
 
+
 @app.route('/drivers', methods=['GET'])
 def get_all_drivers():
     """Retrieve all drivers."""
@@ -49,10 +51,12 @@ def get_all_drivers():
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM drivers')
         drivers = [
-            {'id': row[0], 'name': row[1], 'phone': row[2], 'vehicle': row[3], 'license_plate': row[4]}
+            {'id': row[0], 'name': row[1], 'phone': row[2],
+                'vehicle': row[3], 'license_plate': row[4]}
             for row in cursor.fetchall()
         ]
     return jsonify(drivers), 200
+
 
 @app.route('/drivers/<int:driver_id>', methods=['GET'])
 def get_driver(driver_id):
@@ -62,10 +66,12 @@ def get_driver(driver_id):
         cursor.execute('SELECT * FROM drivers WHERE id = ?', (driver_id,))
         row = cursor.fetchone()
         if row:
-            driver = {'id': row[0], 'name': row[1], 'phone': row[2], 'vehicle': row[3], 'license_plate': row[4]}
+            driver = {'id': row[0], 'name': row[1], 'phone': row[2],
+                      'vehicle': row[3], 'license_plate': row[4]}
             return jsonify(driver), 200
         else:
             return jsonify({'error': 'Driver not found'}), 404
+
 
 @app.route('/drivers/<int:driver_id>', methods=['PUT'])
 def update_driver(driver_id):
@@ -91,6 +97,7 @@ def update_driver(driver_id):
 
     return jsonify({'message': 'Driver updated successfully'}), 200
 
+
 @app.route('/drivers/<int:driver_id>', methods=['DELETE'])
 def delete_driver(driver_id):
     """Delete a driver."""
@@ -105,6 +112,35 @@ def delete_driver(driver_id):
 
     return jsonify({'message': 'Driver deleted successfully'}), 200
 
+
+@app.route('/ride-cost', methods=['POST'])
+def calculate_ride_cost():
+    """
+    Calculate the cost of a ride based on distance.
+    - Minimum fare: 10.25 SAR for up to 8 km.
+    - Additional cost: 1.23 SAR per km after 8 km.
+    - Pickup charge: 1 SAR.
+    """
+    data = request.get_json()
+    distance = data.get('distance')
+
+    if distance is None or distance < 0:
+        return jsonify({'error': 'Invalid distance provided'}), 400
+
+    base_fare = 10.25
+    additional_rate = 1.23
+    pickup_charge = 1.0
+
+    if distance <= 8:
+        total_cost = base_fare + pickup_charge
+    else:
+        extra_distance = distance - 8
+        total_cost = base_fare + \
+            (extra_distance * additional_rate) + pickup_charge
+
+    return jsonify({'distance': distance, 'total_cost': round(total_cost, 2)}), 200
+
+
 if __name__ == '__main__':
-    init_db() 
+    init_db()
     app.run(debug=True)
