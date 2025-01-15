@@ -144,3 +144,4 @@ def calculate_ride_cost():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+    
